@@ -6,6 +6,16 @@ esp32:
   framework:
     type: esp-idf
 
+# Vertel ESPHome dat de lokale map externe componenten bevat
+external_components:
+  - source:
+      type: local
+      path: .
+
+# Activeer je eigen gemaakte component direct in de root van de YAML
+custom_endpoint:
+  sensor: sofar_current_power
+
 logger:
   level: VERBOSE
   baud_rate: 0
@@ -17,6 +27,7 @@ logger:
     sensor: WARN
     wifi: WARN
     api: WARN
+    web_server: VERBOSE
 
 ota:
   - platform: esphome
@@ -59,18 +70,26 @@ modbus:
   send_wait_time: 2500ms
 
 modbus_controller:
-  - id: sofar_inverter
+  - id: sofar_inverter_fast
     address: 1
     modbus_id: modbus_bus
     command_throttle: 5s
     max_cmd_retries: 1
     update_interval: 10s
 
+  - id: sofar_inverter_slow
+    address: 1
+    modbus_id: modbus_bus
+    command_throttle: 5s
+    max_cmd_retries: 1
+    update_interval: 60s
+
 # Sensoren om de data (en connectiestatus) uit te lezen
 sensor:
   - platform: modbus_controller
-    modbus_controller_id: sofar_inverter
+    modbus_controller_id: sofar_inverter_fast
     name: "Sofar - Actueel Vermogen (W)"
+    id: sofar_current_power
     register_count: 1
     register_type: holding
     address: 0x000C
@@ -83,7 +102,7 @@ sensor:
     accuracy_decimals: 0
 
   - platform: modbus_controller
-    modbus_controller_id: sofar_inverter
+    modbus_controller_id: sofar_inverter_slow
     name: "Sofar - Dagproductie (kWh)"
     register_count: 1
     register_type: holding
@@ -95,3 +114,15 @@ sensor:
     value_type: U_WORD
     unit_of_measurement: kWh
     accuracy_decimals: 2
+
+  - platform: modbus_controller
+    modbus_controller_id: sofar_inverter_slow
+    name: "Sofar - Totaalproductie (kWh)"
+    register_count: 2
+    register_type: holding
+    address: 0x0015
+    device_class: energy
+    state_class: total
+    value_type: U_DWORD
+    unit_of_measurement: kWh
+    accuracy_decimals: 0
