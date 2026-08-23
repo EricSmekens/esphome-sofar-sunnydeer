@@ -12,14 +12,21 @@ CustomEndpointComponent = custom_endpoint_ns.class_(
 
 CONFIG_SCHEMA = cv.Schema({
     cv.GenerateID(): cv.declare_id(CustomEndpointComponent),
-    cv.Required("sensor"): cv.use_id(sensor.Sensor),
+    cv.Required("sensorPower"): cv.use_id(sensor.Sensor),
+    cv.Optional("sensorVoltage"): cv.use_id(sensor.Sensor),
+    cv.Optional("sensorCurrent"): cv.use_id(sensor.Sensor),
+    cv.Optional("sensorTotalPower"): cv.use_id(sensor.Sensor),
 }).extend(cv.COMPONENT_SCHEMA)
 
 
 async def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID])
 
-    sensor_var = await cg.get_variable(config["sensor"])
-    cg.add(var.set_act_power(sensor_var))
+    sensorPower = await cg.get_variable(config["sensorPower"])
+    sensorVoltage = await cg.get_variable(config["sensorVoltage"])
+    sensorCurrent = await cg.get_variable(config["sensorCurrent"])
+    sensorTotalPower = await cg.get_variable(config["sensorTotalPower"])
+
+    cg.add(var.set_act_power(sensorPower, sensorVoltage, sensorCurrent, sensorTotalPower))
 
     await cg.register_component(var, config)

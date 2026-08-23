@@ -14,7 +14,10 @@ external_components:
 
 # Activeer je eigen gemaakte component direct in de root van de YAML
 custom_endpoint:
-  sensor: sofar_current_power
+  sensorPower: sofar_current_power
+  sensorVoltage: sofar_voltage
+  sensorCurrent: sofar_current
+  sensorTotalPower: sofar_total_power
 
 logger:
   level: VERBOSE
@@ -102,6 +105,36 @@ sensor:
     accuracy_decimals: 0
 
   - platform: modbus_controller
+    modbus_controller_id: sofar_inverter_fast
+    name: "Sofar - Voltage (V)"
+    id: sofar_voltage
+    register_count: 1
+    register_type: holding
+    address: 0x000F
+    filters:
+      - multiply: 0.1
+    device_class: voltage
+    state_class: measurement
+    value_type: U_WORD
+    unit_of_measurement: V
+    accuracy_decimals: 1
+
+  - platform: modbus_controller
+    modbus_controller_id: sofar_inverter_fast
+    name: "Sofar - Stroom (A)"
+    id: sofar_current
+    register_count: 1
+    register_type: holding
+    address: 0x0010
+    filters:
+      - multiply: 0.01
+    device_class: energy 
+    state_class: measurement
+    value_type: U_WORD
+    unit_of_measurement: A
+    accuracy_decimals: 2
+
+  - platform: modbus_controller
     modbus_controller_id: sofar_inverter_slow
     name: "Sofar - Dagproductie (kWh)"
     register_count: 1
@@ -118,6 +151,7 @@ sensor:
   - platform: modbus_controller
     modbus_controller_id: sofar_inverter_slow
     name: "Sofar - Totaalproductie (kWh)"
+    id: sofar_total_power
     register_count: 2
     register_type: holding
     address: 0x0015
