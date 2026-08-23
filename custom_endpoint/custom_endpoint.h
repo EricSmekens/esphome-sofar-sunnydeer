@@ -10,6 +10,7 @@ namespace custom_endpoint {
 
 class CustomApiHandler : public AsyncWebHandler {
  protected:
+  sensor::Sensor *uptime{nullptr};
   sensor::Sensor *act_power{nullptr};
   sensor::Sensor *voltage{nullptr};
   sensor::Sensor *current{nullptr};
@@ -17,7 +18,9 @@ class CustomApiHandler : public AsyncWebHandler {
 
 
  public:
-  void set_act_power(sensor::Sensor *sensorPower, sensor::Sensor *sensorVoltage = nullptr, sensor::Sensor *sensorCurrent = nullptr, sensor::Sensor *sensorTotalPower = nullptr) {
+  void set_act_power(sensor::Sensor *sensorUptime, sensor::Sensor *sensorPower, sensor::Sensor *sensorVoltage = nullptr, sensor::Sensor *sensorCurrent = nullptr, sensor::Sensor *sensorTotalPower = nullptr) {
+    this->uptime = sensorUptime;
+    
     this->act_power = sensorPower;
     this->voltage = sensorVoltage;
     this->current = sensorCurrent;
@@ -25,18 +28,16 @@ class CustomApiHandler : public AsyncWebHandler {
   }
 
   bool canHandle(AsyncWebServerRequest *request) const override {
-    // ESP_LOGI(
-    //       "custom_endpoint",
-    //       "Endpoint aangeroepen: %s", request->url().c_str());
     if (request->method() != HTTP_GET) {
       return false;
     }
 
-        char url_buf[AsyncWebServerRequest::URL_BUF_SIZE];
-        request->url_to(url_buf);
+    char url_buf[AsyncWebServerRequest::URL_BUF_SIZE];
+    request->url_to(url_buf);
+    ESP_LOGI("custom_endpoint", "Endpoint aangeroepen: %s", url_buf);
 
-        return strcmp(url_buf, "/rpc/Shelly.GetStatus") == 0 ||
-          strcmp(url_buf, "/rpc/Shelly.GetDeviceInfo") == 0;
+    return strcmp(url_buf, "/rpc/Shelly.GetStatus") == 0 ||
+      strcmp(url_buf, "/rpc/Shelly.GetDeviceInfo") == 0;
   }
 
   void handleRequest(AsyncWebServerRequest *request) override {
@@ -44,7 +45,7 @@ class CustomApiHandler : public AsyncWebHandler {
     request->url_to(url_buf);
 
     if (strcmp(url_buf, "/rpc/Shelly.GetStatus") == 0) {
-      if (this->act_power == nullptr || this->voltage == nullptr || this->current == nullptr || this->total_power == nullptr) {
+      if (this->uptime == nullptr || this->act_power == nullptr || this->voltage == nullptr || this->current == nullptr || this->total_power == nullptr) {
         request->send(
             500,
             "application/json",
@@ -55,8 +56,7 @@ class CustomApiHandler : public AsyncWebHandler {
       char response[512];
       snprintf(response, sizeof(response),
                "{"
-               "\"sys\":{ \"uptime\":3600 },"
-               "\"wifi\":{ \"rssi\":80 },"
+               "\"sys\":{ \"uptime\":%.0f },"
                "\"switch:0\":{"
                "\"id\":0,"
                "\"output\":true,"
@@ -64,12 +64,14 @@ class CustomApiHandler : public AsyncWebHandler {
                "\"voltage\":%.1f,"
                "\"current\":%.2f,"
                "\"aenergy\":{\"total\":%.1f,\"by_minute\":[0.0,0.0,0.0]}"
-               "}"
+               "},"
+               "\"wifi\":{ \"rssi\":80 }"
                "}",
-               this->act_power->state,
+               this->uptime->state,
+               -this->act_power->state,
                this->voltage->state,
                this->current->state,
-               this->total_power->state);
+               -this->total_power->state);
 
       request->send(200, "application/json", response);
       return;
@@ -77,10 +79,10 @@ class CustomApiHandler : public AsyncWebHandler {
 
     if (strcmp(url_buf, "/rpc/Shelly.GetDeviceInfo") == 0) {
       const char shelly_resp[] =
-          "{\"id\":\"shellyplugsg3-1234567890ab\","
+          "{\"id\":\"shellyplugsg3-1234567890bc\","
           "\"name\":\"Sofar Solar Plug\","
           "\"model\":\"S3PL-00112EU\","
-          "\"mac\":\"1234567890AB\","
+          "\"mac\":\"1234567890BC\","
           "\"app\":\"PlugSG3\","
           "\"ver\":\"1.4.0\","
           "\"generation\":3}";
@@ -98,8 +100,8 @@ class CustomEndpointComponent : public Component {
   CustomApiHandler handler_;
 
  public:
-  void set_act_power(sensor::Sensor *sensorPower, sensor::Sensor *sensorVoltage = nullptr, sensor::Sensor *sensorCurrent = nullptr, sensor::Sensor *sensorTotalPower = nullptr) {
-    this->handler_.set_act_power(sensorPower, sensorVoltage, sensorCurrent, sensorTotalPower);
+  void set_act_power(sensor::Sensor *sensorUptime, sensor::Sensor *sensorPower, sensor::Sensor *sensorVoltage = nullptr, sensor::Sensor *sensorCurrent = nullptr, sensor::Sensor *sensorTotalPower = nullptr) {
+    this->handler_.set_act_power(sensorUptime, sensorPower, sensorVoltage, sensorCurrent, sensorTotalPower);
   }
 
   void setup() override {

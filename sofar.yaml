@@ -14,19 +14,25 @@ external_components:
 
 # Activeer je eigen gemaakte component direct in de root van de YAML
 custom_endpoint:
+  sensorUptime: waveshare_uptime
   sensorPower: sofar_current_power
   sensorVoltage: sofar_voltage
   sensorCurrent: sofar_current
   sensorTotalPower: sofar_total_power
+
+time:
+  - platform: sntp
+    id: sntp_time
+    timezone: "Europe/Amsterdam"
 
 logger:
   level: VERBOSE
   baud_rate: 0
 
   logs:
-    modbus: VERBOSE
-    modbus_controller: VERBOSE
-    uart: VERBOSE
+    modbus: INFO
+    modbus_controller: INFO
+    uart: INFO
     sensor: WARN
     wifi: WARN
     api: WARN
@@ -89,6 +95,9 @@ modbus_controller:
 
 # Sensoren om de data (en connectiestatus) uit te lezen
 sensor:
+  - platform: uptime
+    id: waveshare_uptime
+
   - platform: modbus_controller
     modbus_controller_id: sofar_inverter_fast
     name: "Sofar - Actueel Vermogen (W)"
