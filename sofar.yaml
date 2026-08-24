@@ -25,6 +25,26 @@ time:
     id: sntp_time
     timezone: "Europe/Amsterdam"
 
+# De zelfstandige sun component (vereist geografische coördinaten voor de berekening)
+sun:
+  latitude: 51.5907° N
+  longitude: 4.8583° E
+
+  # Triggers die direct reageren op de stand van de zon
+  on_sunset:
+    - then:
+        - lambda: |-
+            ESP_LOGW("modbus", "Zon is onder. Modbus controllers worden gepauzeerd.");
+        - component.suspend: sofar_inverter_fast
+        - component.suspend: sofar_inverter_slow
+
+  on_sunrise:
+    - then:
+        - lambda: |-
+            ESP_LOGI("modbus", "Zon komt op. Modbus controllers worden gestart.");
+        - component.resume: sofar_inverter_fast
+        - component.resume: sofar_inverter_slow
+
 logger:
   level: VERBOSE
   baud_rate: 0
@@ -97,6 +117,7 @@ modbus_controller:
 sensor:
   - platform: uptime
     id: waveshare_uptime
+    name: "Waveshare Uptime"
 
   - platform: modbus_controller
     modbus_controller_id: sofar_inverter_fast
@@ -112,6 +133,7 @@ sensor:
     value_type: U_WORD
     unit_of_measurement: W
     accuracy_decimals: 0
+    force_update: false
 
   - platform: modbus_controller
     modbus_controller_id: sofar_inverter_fast
@@ -127,6 +149,7 @@ sensor:
     value_type: U_WORD
     unit_of_measurement: V
     accuracy_decimals: 1
+    force_update: false
 
   - platform: modbus_controller
     modbus_controller_id: sofar_inverter_fast
@@ -142,6 +165,7 @@ sensor:
     value_type: U_WORD
     unit_of_measurement: A
     accuracy_decimals: 2
+    force_update: false
 
   - platform: modbus_controller
     modbus_controller_id: sofar_inverter_slow
@@ -156,6 +180,7 @@ sensor:
     value_type: U_WORD
     unit_of_measurement: kWh
     accuracy_decimals: 2
+    force_update: false
 
   - platform: modbus_controller
     modbus_controller_id: sofar_inverter_slow
@@ -169,3 +194,4 @@ sensor:
     value_type: U_DWORD
     unit_of_measurement: kWh
     accuracy_decimals: 0
+    force_update: false
