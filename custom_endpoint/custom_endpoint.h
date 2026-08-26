@@ -15,12 +15,14 @@ class CustomApiHandler : public AsyncWebHandler {
   sensor::Sensor *voltage{nullptr};
   sensor::Sensor *current{nullptr};
   sensor::Sensor *total_power{nullptr};
+  sensor::Sensor *wifi_signal{nullptr};
 
 
  public:
-  void set_act_power(sensor::Sensor *sensorUptime, sensor::Sensor *sensorPower, sensor::Sensor *sensorVoltage = nullptr, sensor::Sensor *sensorCurrent = nullptr, sensor::Sensor *sensorTotalPower = nullptr) {
-    this->uptime = sensorUptime;
-    
+  void set_act_power(sensor::Sensor *sensorUptime, sensor::Sensor *sensorWifi, sensor::Sensor *sensorPower, sensor::Sensor *sensorVoltage, sensor::Sensor *sensorCurrent, sensor::Sensor *sensorTotalPower) {
+    this->uptime = sensorUptime; 
+    this->wifi_signal = sensorWifi;
+
     this->act_power = sensorPower;
     this->voltage = sensorVoltage;
     this->current = sensorCurrent;
@@ -45,7 +47,7 @@ class CustomApiHandler : public AsyncWebHandler {
     request->url_to(url_buf);
 
     if (strcmp(url_buf, "/rpc/Shelly.GetStatus") == 0) {
-      if (this->uptime == nullptr || this->act_power == nullptr || this->voltage == nullptr || this->current == nullptr || this->total_power == nullptr) {
+      if (this->wifi_signal == nullptr || this->uptime == nullptr || this->act_power == nullptr || this->voltage == nullptr || this->current == nullptr || this->total_power == nullptr) {
         request->send(
             500,
             "application/json",
@@ -65,13 +67,14 @@ class CustomApiHandler : public AsyncWebHandler {
                "\"current\":%.2f,"
                "\"aenergy\":{\"total\":%.1f,\"by_minute\":[0.0,0.0,0.0]}"
                "},"
-               "\"wifi\":{ \"rssi\":80 }"
+               "\"wifi\":{ \"rssi\":%.0f }"
                "}",
                this->uptime->state,
                -this->act_power->state,
                this->voltage->state,
                this->current->state,
-               -this->total_power->state);
+               -this->total_power->state,
+               this->wifi_signal->state);
 
       request->send(200, "application/json", response);
       return;
@@ -100,8 +103,8 @@ class CustomEndpointComponent : public Component {
   CustomApiHandler handler_;
 
  public:
-  void set_act_power(sensor::Sensor *sensorUptime, sensor::Sensor *sensorPower, sensor::Sensor *sensorVoltage = nullptr, sensor::Sensor *sensorCurrent = nullptr, sensor::Sensor *sensorTotalPower = nullptr) {
-    this->handler_.set_act_power(sensorUptime, sensorPower, sensorVoltage, sensorCurrent, sensorTotalPower);
+  void set_act_power(sensor::Sensor *sensorUptime, sensor::Sensor *sensorWifi, sensor::Sensor *sensorPower, sensor::Sensor *sensorVoltage = nullptr, sensor::Sensor *sensorCurrent = nullptr, sensor::Sensor *sensorTotalPower = nullptr) {
+    this->handler_.set_act_power(sensorUptime, sensorWifi, sensorPower, sensorVoltage, sensorCurrent, sensorTotalPower);
   }
 
   void setup() override {

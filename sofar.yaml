@@ -19,6 +19,7 @@ custom_endpoint:
   sensorVoltage: sofar_voltage
   sensorCurrent: sofar_current
   sensorTotalPower: sofar_total_power
+  sensorWifi: wifi_signal_db
 
 time:
   - platform: sntp
@@ -27,14 +28,18 @@ time:
 
 # De zelfstandige sun component (vereist geografische coördinaten voor de berekening)
 sun:
-  latitude: 51.5907° N
-  longitude: 4.8583° E
+  latitude: 51.5907
+  longitude: 4.8583
 
   # Triggers die direct reageren op de stand van de zon
   on_sunset:
     - then:
         - lambda: |-
-            ESP_LOGW("modbus", "Zon is onder. Modbus controllers worden gepauzeerd.");
+            ESP_LOGW("modbus", "Zon is onder. Modbus communicatie wordt gestopt en waarden worden gereset.");
+            id(sofar_current_power).publish_state(0.0);
+            id(sofar_voltage).publish_state(0.0);
+            id(sofar_current).publish_state(0.0);
+            
         - component.suspend: sofar_inverter_fast
         - component.suspend: sofar_inverter_slow
 
@@ -119,6 +124,11 @@ sensor:
     id: waveshare_uptime
     name: "Waveshare Uptime"
 
+  - platform: wifi_signal # Reports the WiFi signal strength/RSSI in dB
+    name: "WiFi Signal dB"
+    id: wifi_signal_db
+    update_interval: 60s
+
   - platform: modbus_controller
     modbus_controller_id: sofar_inverter_fast
     name: "Sofar - Actueel Vermogen (W)"
@@ -195,3 +205,12 @@ sensor:
     unit_of_measurement: kWh
     accuracy_decimals: 0
     force_update: false
+
+text_sensor:
+  - platform: sun
+    name: Sun Next Sunrise
+    type: sunrise
+
+  - platform: sun
+    name: Sun Next Sunset
+    type: sunset
